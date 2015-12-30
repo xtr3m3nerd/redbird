@@ -35,6 +35,31 @@ describe("Route registration", function(){
 
 		redbird.close();
 	})
+	it("should register a default route", function(){
+		var redbird = Redbird(opts);
+
+		expect(redbird.routing).to.be.an("object");
+
+		debugger;
+
+		redbird.register('*', '192.168.1.2:8080');
+
+		expect(redbird.routing).to.have.property('*')
+
+		var host = redbird.routing['*'];
+		expect(host).to.be.an("array");
+		expect(host[0]).to.have.property('path')
+		expect(host[0].path).to.be.eql('/');
+		expect(host[0].urls).to.be.an('array');
+		expect(host[0].urls.length).to.be.eql(1);
+		expect(host[0].urls[0].href).to.be.eql('http://192.168.1.2:8080/');
+		
+		redbird.unregister('*', '192.168.1.2:8080');
+		expect(redbird.resolve('*')).to.be.an("undefined")
+		expect(redbird.resolve('example.co*')).to.be.an("undefined")
+
+		redbird.close();
+	})
 	it("should register multiple routes", function(){
 		var redbird = Redbird(opts);
 
@@ -138,6 +163,21 @@ describe("Route registration", function(){
 })
 
 describe("Route resolution", function(){
+	it("should resolve to a default host", function(){
+		var redbird = Redbird(opts);
+
+		expect(redbird.routing).to.be.an("object");
+
+		redbird.register('*', '192.168.1.2:8080');
+
+		var route = redbird.resolve('example.com', '/foo/asd/1/2');
+		expect(route.path).to.be.eql('/')
+		expect(route.urls.length).to.be.eql(1);
+		expect(route.urls[0].href).to.be.eql('http://192.168.1.2:8080/');
+
+		redbird.close();
+	})
+
 	it("should resolve to a correct route", function(){
 		var redbird = Redbird(opts);
 
@@ -231,7 +271,7 @@ describe("Route resolution", function(){
 	    var route = redbird.resolve('example.com', '/qux/a/b/c');
 	    expect(route.path).to.be.eql('/');
 
-	    var req = {url: '/foo/baz/a/b/c'}
+	   var req = {url: '/foo/baz/a/b/c'}
 		var target = redbird._getTarget('example.com', req);
 		expect(target.href).to.be.eql('http://192.168.1.3:8080/a/b')
 		expect(req.url).to.be.eql('/a/b/baz/a/b/c')
